@@ -1,6 +1,7 @@
 import psycopg2
 from sql_queries import create_table_queries, drop_table_queries
-
+from sqlalchemy_schemadisplay import create_schema_graph
+from sqlalchemy import MetaData
 
 def create_database():
     """
@@ -48,6 +49,15 @@ def create_tables(cur, conn):
         cur.execute(query)
         conn.commit()
 
+def generator_erd():
+    '''
+    Generate the ER diagram using sqlalchemy_schemadisplay.
+    
+    Returns: The png image with the database schema in assets file.
+    '''
+    graph = create_schema_graph(metadata=MetaData('postgresql://student:student@127.0.0.1/sparkifydb'))
+    return graph.write_png('./assets/sparkifydb_erd.png')
+
 
 def main():
     """
@@ -66,6 +76,7 @@ def main():
 
     drop_tables(cur, conn)
     create_tables(cur, conn)
+    generator_erd()
 
     conn.close()
 

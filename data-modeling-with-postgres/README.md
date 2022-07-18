@@ -125,6 +125,10 @@ ON CONFLICT (start_time)
 DO NOTHING
 ```
 
+## ER diagram
+
+<img src="./assets/sparkifydb_erd.png">
+
 ## Project Architecture
 
 ``` tree
