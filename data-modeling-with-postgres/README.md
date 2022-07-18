@@ -135,16 +135,20 @@ DO NOTHING
 data-modeling-with-postgres
 ├── Makefile
 ├── README.md
-├── __pycache__
+│   └── sql_queries.cpython-39.pyc
 ├── assets
+│   ├── postgresql-tutorial-homepage.svg
+│   └── sparkifydb_erd.png
 ├── create_tables.py
 ├── data
+│   ├── log_data
+│   └── song_data
 ├── docker-compose-postgres.yml
 ├── etl.ipynb
 ├── etl.py
 ├── requirements.txt
 ├── sql_queries.py
-├── test.ipynb
+└── test.ipynb
 └── venv
 ```
 
