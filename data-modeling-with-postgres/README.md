@@ -144,7 +144,7 @@ data-modeling-with-postgres
 └── venv
 ```
 
-## Diretory:
+## Directory:
 	
 1. sql_queries.py:
 
