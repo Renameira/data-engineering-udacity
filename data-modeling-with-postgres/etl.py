@@ -6,17 +6,46 @@ from sql_queries import *
 
 
 def insert_record(cur: object, df: object, insert_query: str, fields: list):
+    """Insert object data records in database.
+
+    Args:
+        cur: Cursor of database`s connect.
+        df: dataframe in question
+        insert_query: query that insert data in specific table.
+        fields: main columns added to the table
+
+    Returns:
+        None
+    """
     record = df[fields].values[0].tolist()
     cur.execute(insert_query, record)
-    print(record)
 
 
 def insert_dataframe(cur: object, df: object, insert_query: str):
+    """Insert object data of dataframe in database.
+
+    Args:
+        cur: Cursor of database`s connect.
+        df: dataframe in question
+        insert_query: query that insert data in specific table.
+    Returns:
+        None
+    """
     for i, row in df.iterrows():
         cur.execute(insert_query, list(row))
 
 
 def process_song_file(cur, filepath):
+    """This process performs a reading of the data in a specific path and performs the
+    insertions of data in the user and artist tables.
+
+    Args:
+        cur: Cursor of database`s connect.
+        filepath: the specific path to read of data
+
+    Returns:
+        None
+    """
     # open song file
     df = pd.read_json(filepath, lines=True)
 
@@ -44,6 +73,16 @@ def process_song_file(cur, filepath):
 
 
 def process_log_file(cur, filepath):
+    """This process performs a reading of the data in a specific path and performs the
+    insertions of data in the time, user and songplay tables.
+
+    Args:
+        cur: Cursor of database`s connect.
+        filepath: the specific path to read of data
+
+    Returns:
+        None
+    """
     # open log file
     df = pd.read_json(filepath, lines=True)
 
@@ -109,6 +148,19 @@ def process_log_file(cur, filepath):
 
 
 def process_data(cur, conn, filepath, func):
+    """Get all files matching extension from directory,
+    get total number of files found,
+    iterate over files and process.
+
+    Args:
+        cur: Cursor of database`s connect.
+        conn: conector of database`s connect
+        filepath: the specific path to read of data
+        func: function that will extract, transform and load the data into the database.
+
+    Returns:
+        None
+    """
     # get all files matching extension from directory
     all_files = []
     for root, dirs, files in os.walk(filepath):
@@ -128,6 +180,12 @@ def process_data(cur, conn, filepath, func):
 
 
 def main():
+    """Connection through lib psycopg2, run process data to process_song_file 
+    and run process data to process_log_file.
+
+    Returns:
+        None
+    """
     try:
         conn = psycopg2.connect(
             "host=127.0.0.1 dbname=sparkifydb user=student password=student"
