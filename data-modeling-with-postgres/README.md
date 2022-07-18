@@ -1,20 +1,28 @@
 # Project: Data Modeling with Postgres
 
 
-<img src="./assets/postgresql-tutorial-homepage.svg" height="100" width="1000" >
+<img src="./assets/postgresql-tutorial-homepage.svg" height="100" width="1000">
 
 ## Introduction
+<br>
 A startup called Sparkify wants to analyze the data they've been collecting on songs and user activity on their new music streaming app. The analytics team is particularly interested in understanding what songs users are listening to. Currently, they don't have an easy way to query their data, which resides in a directory of JSON logs on user activity on the app, as well as a directory with JSON metadata on the songs in their app.
 
 They'd like a data engineer to create a Postgres database with tables designed to optimize queries on song play analysis, and bring you on the project. Your role is to create a database schema and ETL pipeline for this analysis. You'll be able to test your database and ETL pipeline by running queries given to you by the analytics team from Sparkify and compare your results with their expected results.
 
 ## Project Description
+<br>
 In this project, you'll apply what you've learned on data modeling with Postgres and build an ETL pipeline using Python. To complete the project, you will need to define fact and dimension tables for a star schema for a particular analytic focus, and write an ETL pipeline that transfers data from files in two local directories into these tables in Postgres using Python and SQL.
 
 ## Data model
+<br>
+
+### ER diagram
+
+<img src="./assets/sparkifydb_erd.png" align="middle">
 
  ### Fact Table
-**Table songplays**
+
+**Songplays table**
 
 | COLUMN  		| TYPE  	| CONSTRAINT  	|
 |	---			|	---		|	---			|	
@@ -38,12 +46,13 @@ VALUES ( %s, %s, %s, %s, %s, %s, %s, %s)
  ```
 
  ### Dimensions Tables
- 
- **Table users**
+ <br>
+
+ **Users table**
  
 | 	COLUMN  	| TYPE  		| CONSTRAINT  	|
 |	---			|	---			|		---		|	
-| user_id		| int  			|   PRIMARY KEY	| 
+| user_id		|   int  		|   PRIMARY KEY	| 
 | first_name	|   varchar		|  				| 
 | last_name		|   varchar		|  				| 
 | gender		|   varchar(1) 	|   			| 
@@ -61,7 +70,7 @@ Followed by the query to insert the data in the table above:
         gender = EXCLUDED.gender, level = EXCLUDED.level
 ```
 
-**Table songs**
+**Songs table**
 
 | 	COLUMN  	| TYPE  	| CONSTRAINT   	|
 |	---			|	---		|	---			|	
@@ -82,7 +91,7 @@ INSERT INTO songs (song_id, title, artist_id, year, duration)
         year = EXCLUDED.year, duration = EXCLUDED.duration 
 ```
 
-**Table artists**
+**Artists table**
 
 | COLUMN  		| 	TYPE  		| CONSTRAINT   	|
 |	---			|	---			|	---			|	
@@ -104,7 +113,7 @@ INSERT INTO artists (artist_id, name, location, latitude, longitude)
         latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude
 ```
 
-**Table time**
+**Time table**
  
 | COLUMN  	| 	TYPE  	| CONSTRAINT   	|
 |	---		|	---		|	---			|	
@@ -124,10 +133,6 @@ VALUES (%s, %s, %s, %s, %s, %s, %s)
 ON CONFLICT (start_time) 
 DO NOTHING
 ```
-
-## ER diagram
-
-<img src="./assets/sparkifydb_erd.png">
 
 ## Project Architecture
 
@@ -161,8 +166,6 @@ in addition to inserting and selecting the available data
 
 2. etl.py
 
-step by step:
-
     1. Connect to the database;
     2. Process song files;
         1. Insert song data in songs table; 
@@ -175,16 +178,14 @@ step by step:
 
 3. create_tables.py
 
-step by step:
-
     1. connect to the studentdb database;
     2. drop sparkifydb database  
     3. connect to the sparkifydb database;
     4. create table;
     5. Close connect to the database. 
 
-
 ## How to run scripts
+<br>
 
 First of all, initialize a virtual environment with project dependency, using the script bellow.
 Then set the `.env` in config file (if you have doubts there is `.env.example` for support):
