@@ -3,6 +3,15 @@ import glob
 import psycopg2
 import pandas as pd
 from sql_queries import *
+import configparser
+
+config = configparser.ConfigParser()
+
+current_dir = os.path.abspath(".")
+full_path = os.path.join(current_dir, "config/.env")
+config.read(full_path, encoding="utf-8")
+
+CONNECTION_SPARKIFYDB = config["DB"]["CONNECTION_SPARKIFYDB"]
 
 
 def insert_record(cur: object, df: object, insert_query: str, fields: list):
@@ -180,16 +189,14 @@ def process_data(cur, conn, filepath, func):
 
 
 def main():
-    """Connection through lib psycopg2, run process data to process_song_file 
+    """Connection through lib psycopg2, run process data to process_song_file
     and run process data to process_log_file.
 
     Returns:
         None
     """
     try:
-        conn = psycopg2.connect(
-            "host=127.0.0.1 dbname=sparkifydb user=student password=student"
-        )
+        conn = psycopg2.connect(CONNECTION_SPARKIFYDB)
         cur = conn.cursor()
 
         process_data(cur, conn, filepath="data/song_data", func=process_song_file)

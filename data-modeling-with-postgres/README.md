@@ -186,7 +186,8 @@ step by step:
 
 ## How to run scripts
 
-First of all, initialize a virtual environment with project dependency, using the script:
+First of all, initialize a virtual environment with project dependency, using the script bellow.
+Then set the `.env` in config file (if you have doubts there is `.env.example` for support):
 
 ``` bash 
 cd data-modeling-with-postgres

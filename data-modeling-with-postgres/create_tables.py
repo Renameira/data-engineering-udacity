@@ -2,6 +2,21 @@ import psycopg2
 from sql_queries import create_table_queries, drop_table_queries
 from sqlalchemy_schemadisplay import create_schema_graph
 from sqlalchemy import MetaData
+import configparser
+import os
+
+config = configparser.ConfigParser()
+
+current_dir = os.path.abspath(".")
+
+full_path = os.path.join(current_dir, "config/.env")
+
+config.read(full_path, encoding="utf-8")
+
+CONNECTION_SPARKIFYDB = config["DB"]["CONNECTION_SPARKIFYDB"]
+CONNECTION_STUDENTDB = config["DB"]["CONNECTION_STUDENTDB"]
+CONNECTION_STRING_SPARKIFYDB = config["DB"]["CONNECTION_STRING_SPARKIFYDB"]
+
 
 def create_database():
     """
@@ -10,9 +25,7 @@ def create_database():
     """
 
     # connect to default database
-    conn = psycopg2.connect(
-        "host=127.0.0.1 dbname=studentdb user=student password=student"
-    )
+    conn = psycopg2.connect(CONNECTION_STUDENTDB)
     conn.set_session(autocommit=True)
     cur = conn.cursor()
 
@@ -24,9 +37,7 @@ def create_database():
     conn.close()
 
     # connect to sparkify database
-    conn = psycopg2.connect(
-        "host=127.0.0.1 dbname=sparkifydb user=student password=student"
-    )
+    conn = psycopg2.connect(CONNECTION_SPARKIFYDB)
     cur = conn.cursor()
 
     return cur, conn
@@ -49,14 +60,15 @@ def create_tables(cur, conn):
         cur.execute(query)
         conn.commit()
 
+
 def generator_erd():
-    '''
+    """
     Generate the ER diagram using sqlalchemy_schemadisplay.
-    
+
     Returns: The png image with the database schema in assets file.
-    '''
-    graph = create_schema_graph(metadata=MetaData('postgresql://student:student@127.0.0.1/sparkifydb'))
-    return graph.write_png('./assets/sparkifydb_erd.png')
+    """
+    graph = create_schema_graph(metadata=MetaData(CONNECTION_STRING_SPARKIFYDB))
+    return graph.write_png("./assets/sparkifydb_erd.png")
 
 
 def main():
