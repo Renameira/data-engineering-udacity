@@ -152,7 +152,7 @@ data-modeling-with-postgres
 └── venv
 ```
 
-## Directory:
+## Python File:
 	
 1. sql_queries.py:
 
@@ -173,7 +173,7 @@ step by step:
         3. Insert songpplay records in songplays table; 
     4. Close connect to the database.
 
-### create_tables.py
+3. create_tables.py
 
 step by step:
 
