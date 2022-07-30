@@ -12,6 +12,18 @@ In this project, you'll apply what you've learned on data modeling with Apache C
 
 We have provided you with a project template that takes care of all the imports and provides a structure for ETL pipeline you'd need to process this data.
 
+## Objective
+The focus of the activity was to build an elt for the non-relational database using Cassandra and answer some questions describe bellow to help the business.
+	
+	1. Give me the artist, song title and song's length in the music app history that was heard during  sessionId = 338, and itemInSession  = 4
+	
+	2. Give me only the following: name of artist, song (sorted by itemInSession) and user (first and last name) for userid = 10, sessionid = 182
+    
+	3. Give me every user name (first and last) in my music app history who listened to the song 'All Hands Against His Own'
+
+
+
+
 ## Folder Architecture
 ```
 data-modeling-with-cassandra
@@ -23,4 +35,6 @@ data-modeling-with-cassandra
 ├── images
 │   └── image_event_datafile_new.jpg
 └── project_cassandra_query_question.ipynb
+├── Makefile
+└── requirements.txt
 ```
