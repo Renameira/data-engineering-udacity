@@ -116,17 +116,18 @@ staging_events_copy = (
 	COPY staging_events 
     FROM {} 
     iam_role {} 
+    region '{}'
     FORMAT AS JSON {} 
     timeformat 'epochmillisecs'
 """
-).format(Settings.LOG_DATA, Settings.ARN, Settings.LOG_JSON_PATH)
+).format(Settings.LOG_DATA, Settings.ARN, Settings.REGION, Settings.LOG_JSON_PATH)
 
 staging_songs_copy = (
     """
     COPY staging_songs 
     FROM {}
     iam_role {}
-    region {}
+    region '{}'
     FORMAT AS JSON 'auto' 
 """
 ).format(
