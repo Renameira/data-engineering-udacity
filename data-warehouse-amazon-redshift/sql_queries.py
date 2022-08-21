@@ -3,12 +3,12 @@ from config import Settings
 
 # DROP TABLES
 staging_events_table_drop = "DROP table IF EXISTS staging_events;"
-staging_songs_table_drop  = "DROP table IF EXISTS staging_songs;"
-songplay_table_drop       = "DROP table IF EXISTS songplays;"
-user_table_drop           = "DROP table IF EXISTS users;"
-song_table_drop           = "DROP table IF EXISTS songs;"
-artist_table_drop         = "DROP table IF EXISTS artists;"
-time_table_drop           = "DROP table IF EXISTS time;"
+staging_songs_table_drop = "DROP table IF EXISTS staging_songs;"
+songplay_table_drop = "DROP table IF EXISTS songplays;"
+user_table_drop = "DROP table IF EXISTS users;"
+song_table_drop = "DROP table IF EXISTS songs;"
+artist_table_drop = "DROP table IF EXISTS artists;"
+time_table_drop = "DROP table IF EXISTS time;"
 
 # CREATE TABLES
 staging_events_table_create = """
@@ -116,17 +116,10 @@ staging_events_copy = (
 	COPY staging_events 
     FROM {} 
     iam_role {} 
-    region {}
     FORMAT AS JSON {} 
     timeformat 'epochmillisecs'
-    TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL;
 """
-).format(
-    Settings.LOG_DATA, 
-    Settings.ARN, 
-    Settings.REGION, 
-    Settings.LOG_JSON_PATH
-)
+).format(Settings.LOG_DATA, Settings.ARN, Settings.LOG_JSON_PATH)
 
 staging_songs_copy = (
     """
@@ -135,7 +128,6 @@ staging_songs_copy = (
     iam_role {}
     region {}
     FORMAT AS JSON 'auto' 
-    TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL;
 """
 ).format(
     Settings.SONG_DATA, 
@@ -161,9 +153,9 @@ songplay_table_insert = """
         staging_events.level, 
         staging_songs.song_id, 
         staging_songs.artist_id, 
-        staging_songs.sessionId, 
-        staging_songs.location, 
-        staging_songs.userAgent
+        staging_events.sessionId, 
+        staging_events.location, 
+        staging_events.userAgent
     FROM 
         staging_events
     INNER JOIN staging_songs ON 
