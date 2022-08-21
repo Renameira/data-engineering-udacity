@@ -7,7 +7,7 @@ variable "region"{
 variable "redshify_identify" {
   description   = "Identify redshift cluster"
   type          = string
-  default       = "sparkify-cluster-2022"
+  default       = "sparkify-cluster"
 }
 
 variable "name_database" {

@@ -22,4 +22,5 @@ resource "aws_redshift_cluster" "redshift" {
   cluster_type         = var.type_cluster_instance
   publicly_accessible  = true
   enhanced_vpc_routing = true  
+  skip_final_snapshot  = true
 }
