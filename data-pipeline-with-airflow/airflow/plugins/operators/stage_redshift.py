@@ -14,11 +14,11 @@ class StageToRedshiftOperator(BaseOperator):
         ACCESS_KEY_ID '{}'
         SECRET_ACCESS_KEY '{}'
         {}
-    """    
+    """
 
     @apply_defaults
     def __init__(self,
-                 redshift_conn_id="",
+                 redshift_conn_id="",   
                  aws_credentials_id="",
                  table="",
                  s3_bucket="",
@@ -50,12 +50,9 @@ class StageToRedshiftOperator(BaseOperator):
         self.log.info("Copying data")
         if self.file_format == "json":
             file_processing = "JSON '{}'".format(self.json_path)
-        elif self.file_format == "csv":
+        else self.file_format == "csv":
             file_processing = "IGNOREHEADER '{}' DELIMITER '{}'"\
                               .format(self.ignore_header, self.delimiter)
-
-
-        self.log.info('StageToRedshiftOperator not implemented yet')
 
         rendered_key = self.s3_key.format(**context)
 
