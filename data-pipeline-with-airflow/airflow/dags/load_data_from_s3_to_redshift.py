@@ -17,6 +17,7 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 3,
+    'catchup': False,
     'retry_delay': timedelta(minutes=5),
     'sla': timedelta(hours=1),
 }
@@ -91,7 +92,7 @@ load_artist_dimension_table = LoadDimensionOperator(
 
 load_time_dimension_table = LoadDimensionOperator(
     task_id='Load_time_dim_table',
-    dag=dag
+    dag=dag,
     redshift_conn_id="redshift",
     table="time",
     sql_query=SqlQueries.time_table_insert,

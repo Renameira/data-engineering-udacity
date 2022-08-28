@@ -50,7 +50,7 @@ class StageToRedshiftOperator(BaseOperator):
         self.log.info("Copying data")
         if self.file_format == "json":
             file_processing = "JSON '{}'".format(self.json_path)
-        else self.file_format == "csv":
+        elif self.file_format == "csv":
             file_processing = "IGNOREHEADER '{}' DELIMITER '{}'"\
                               .format(self.ignore_header, self.delimiter)
 
@@ -67,7 +67,3 @@ class StageToRedshiftOperator(BaseOperator):
         )
 
         redshift.run(formatted_sql)
-
-
-
-

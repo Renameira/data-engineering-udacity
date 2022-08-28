@@ -23,5 +23,5 @@ class LoadFactOperator(BaseOperator):
     def execute(self, context):
         self.log.info("Connecting to source data")
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
-	    self.log.info("Running insert data from S3 to Redshift")
+        self.log.info("Running insert data from S3 to Redshift")
         redshift.run("INSERT INTO {} {}".format(self.table, self.sql_query))
