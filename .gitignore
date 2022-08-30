@@ -168,7 +168,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 *.hcl
-
+.terraform
 
 # Airflow 
 logs/

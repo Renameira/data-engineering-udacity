@@ -10,7 +10,7 @@ class LoadDimensionOperator(BaseOperator):
     def __init__(self,
                 redshift_conn_id= "",
                 table = "",
-                sql_query= "",
+                sql_query = "",
                 mode="append-only",
                 *args, 
                 **kwargs
@@ -25,9 +25,19 @@ class LoadDimensionOperator(BaseOperator):
     def execute(self, context):
         self.log.info("Connecting to Redshift")
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
-        if self.mode == "delete-load":
-            self.log.info("deleting data on Redshift")
-            redshift.run("TRUNCATE {}".format(self.table))
+        sql_insert = ""
+        if self.mode == "append-only":
+            sql_insert = """
+                    BEGIN;
+                    INSERT INTO {}
+                    {};
+                    """.format(self.table, self.sql_query)
         else:
-            self.log.info("Running insert data from S3 to Redshift")
-            redshift.run("INSERT INTO {} {}".format(self.table, self.sql_query))
+            sql_insert = """
+                    BEGIN;
+                    TRUNCATE TABLE {}; 
+                    INSERT INTO {}
+                    {};
+                    """.format(self.table, self.table, self.sql_query)
+            
+        redshift.run(sql_insert)
