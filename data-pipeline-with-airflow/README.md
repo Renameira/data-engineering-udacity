@@ -115,3 +115,5 @@ data-pipeline-with-airflow
 
 - Tables must be created in Redshift before running the DAG workflow. Use the `create_tables.sql` script.
 
+- Run dag `load_data_from_s3_to_redshift`
+
