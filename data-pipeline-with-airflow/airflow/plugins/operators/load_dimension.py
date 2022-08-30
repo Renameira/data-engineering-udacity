@@ -27,12 +27,14 @@ class LoadDimensionOperator(BaseOperator):
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
         sql_insert = ""
         if self.mode == "append-only":
+            self.log.info("Insert query to load data from stage to dimension table")
             sql_insert = """
                     BEGIN;
                     INSERT INTO {}
                     {};
                     """.format(self.table, self.sql_query)
         else:
+            self.log.info("Deleting and Run insert query to load data from stage to dimension table")
             sql_insert = """
                     BEGIN;
                     TRUNCATE TABLE {}; 
@@ -40,4 +42,6 @@ class LoadDimensionOperator(BaseOperator):
                     {};
                     """.format(self.table, self.table, self.sql_query)
             
+            
         redshift.run(sql_insert)
+        self.log.info("Finished insert data to dimension table")

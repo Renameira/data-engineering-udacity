@@ -11,6 +11,7 @@ class StageToRedshiftOperator(BaseOperator):
     copy_sql = """
         COPY {}
         FROM '{}'
+        REGION 'us-west-2'
         ACCESS_KEY_ID '{}'
         SECRET_ACCESS_KEY '{}'
         {}
