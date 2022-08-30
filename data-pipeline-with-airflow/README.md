@@ -10,7 +10,7 @@ The source data resides in S3 and needs to be processed in Sparkify's data wareh
 tell about user activity in the application and JSON metadata about the songs the users listen to.
 
 ## Pipeline data in the Airflow
-<img src="./images/example-dag.png" height="100" width="1000">
+<img src="./images/example-dag.png">
 
 ## Data Sources
 
@@ -39,7 +39,7 @@ the purpose of using airflow is to build a pipeline that will extract data into 
 
 ## Data Model
 
-<img src="./images/sparkify_erd.png" height="100" width="1000">
+<img src="./images/sparkify_erd.png">
 
 ## Operators
 
