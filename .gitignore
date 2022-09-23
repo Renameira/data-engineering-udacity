@@ -172,3 +172,8 @@ terraform.rc
 
 # Airflow 
 logs/
+
+
+# File capstone
+capstone-project/data/GlobalTemperature/ 
+capstone-project/data/sas_data/ 
