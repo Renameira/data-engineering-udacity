@@ -1,0 +1,6 @@
+pandas
+pyspark
+boto3
+psycopg2
+apache-airflow
+black
