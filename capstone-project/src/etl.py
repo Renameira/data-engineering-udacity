@@ -5,7 +5,7 @@ import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.types import DateType
 from pyspark.sql.functions import monotonically_increasing_id
-from pyspark.sql.functions import col, lit, year, month, upper, to_date
+from pyspark.sql.functions import col, lit, year, month, upper, to_date, udf
 
 
 logging.basicConfig(
@@ -25,6 +25,9 @@ DEST_S3_BUCKET = config["S3"]["DEST_S3_BUCKET"]
 
 # data processing functions
 def create_spark_session():
+
+    logging.info("Creating spark session")
+
     spark = (
         SparkSession.builder.config(
             "spark.jars.packages", "saurfang:spark-sas7bdat:2.0.0-s_2.11"
@@ -32,36 +35,43 @@ def create_spark_session():
         .enableHiveSupport()
         .getOrCreate()
     )
+    logging.info("Created spark session")
     return spark
 
 
-def rename_columns(table, new_columns):
+def _sas_to_date(date):
+    if date is not None:
+        return pd.to_timedelta(date, unit="D") + pd.Timestamp("1960-1-1")
+
+
+def _transform_columns(table, new_columns):
     for original, new in zip(table.columns, new_columns):
         table = table.withColumnRenamed(original, new)
     return table
 
 
-def process_immigration_data(spark, input_data, output_data):
-    """Process immigration data to get fact_immigration,
-    dim_immi_personal and dim_immi_airline tables
-        Arguments:
-            spark {object}: SparkSession object
-            input_data {object}: Source S3 endpoint
-            output_data {object}: Target S3 endpoint
-        Returns:
-            None
+def process_immigration_data_fact(spark, input_data, output_data):
+    """
+    This process performs a reading of data immigration of the sources and performs the
+    insertions of fact data in the storage(S3).
+
+    Args:
+        spark {object}: SparkSession
+        input_data {object}: data source
+        output_data {object}: data target
+
+    Returns:
+        None
     """
 
-    logging.info("Start processing immigration")
+    logging.info("processing immigration")
 
-    immi_data = os.path.join(
-        input_data + "sas_data"
-    )
-    df = spark.read.parquet(immi_data)
+    df_immigration = os.path.join(input_data, "sas_data")
+    df = spark.read.parquet(df_immigration)
 
     logging.info("Start processing fact_immigration")
 
-    fact_immigration = (
+    df_fact_immigration = (
         df.select(
             "cicid",
             "i94yr",
@@ -77,7 +87,6 @@ def process_immigration_data(spark, input_data, output_data):
         .withColumn("immigration_id", monotonically_increasing_id())
     )
 
-
     new_columns = [
         "cic_id",
         "year",
@@ -89,22 +98,51 @@ def process_immigration_data(spark, input_data, output_data):
         "mode",
         "visa",
     ]
-    fact_immigration = rename_columns(fact_immigration, new_columns)
 
-    fact_immigration = fact_immigration.withColumn("country", lit("United States"))
+    df_fact_immigration = _transform_columns(df_fact_immigration, new_columns)
 
-    fact_immigration.write.mode("overwrite").partitionBy("state_code").parquet(
-        path=output_data + "fact_immigration"
+    df_fact_immigration = df_fact_immigration.withColumn(
+        "arrive_date", udf(_sas_to_date, DateType())(col("arrive_date"))
+    )
+    df_fact_immigration = df_fact_immigration.withColumn(
+        "departure_date", udf(_sas_to_date, DateType())(col("departure_date"))
     )
 
-    logging.info("Start processing dim_immi_personal")
+    df_fact_immigration = df_fact_immigration.withColumn(
+        "country", lit("United States")
+    )
 
-    dim_immi_personal = (
+    df_fact_immigration.write.mode("overwrite").partitionBy(
+        "year", "month", "state_code"
+    ).parquet(path=f"{output_data}/fact_immigration")
+
+
+def process_immigration_data_dim(spark, input_data, output_data):
+    """
+    This process performs a reading of data immigration of the sources and performs the
+    insertions of dimension data in the storage(S3).
+
+    Args:
+        spark {object}: SparkSession
+        input_data {object}: data source
+        output_data {object}: data target
+
+    Returns:
+        None
+    """
+
+    logging.info("processing immigration dimension")
+
+    immi_data = os.path.join(input_data, "sas_data")
+    df = spark.read.parquet(immi_data)
+
+    logging.info("Start processing dimension immigration person")
+
+    df_dim_immigration_person = (
         df.select("cicid", "i94cit", "i94res", "biryear", "gender", "insnum")
         .distinct()
-        .withColumn("immi_personal_id", monotonically_increasing_id())
+        .withColumn("immi_person_id", monotonically_increasing_id())
     )
-
 
     new_columns = [
         "cic_id",
@@ -114,33 +152,42 @@ def process_immigration_data(spark, input_data, output_data):
         "gender",
         "ins_num",
     ]
-    dim_immi_personal = rename_columns(dim_immi_personal, new_columns)
-
-
-    dim_immi_personal.write.mode("overwrite").parquet(
-        path=output_data + "dim_immi_personal"
+    df_dim_immigration_person = _transform_columns(
+        df_dim_immigration_person, new_columns
     )
 
-    logging.info("Start processing dim_immi_airline")
+    df_dim_immigration_person.write.mode("overwrite").parquet(
+        path=f"{output_data}/dim_immigration_person"
+    )
 
-    dim_immi_airline = (
+    logging.info("Start processing dimension immigration airline")
+
+    df_dim_immigration_airline = (
         df.select("cicid", "airline", "admnum", "fltno", "visatype")
         .distinct()
-        .withColumn("immi_airline_id", monotonically_increasing_id())
+        .withColumn("immigration_airline_id", monotonically_increasing_id())
     )
-
 
     new_columns = ["cic_id", "airline", "admin_num", "flight_number", "visa_type"]
-    dim_immi_airline = rename_columns(dim_immi_airline, new_columns)
+    df_dim_immigration_airline = _transform_columns(
+        df_dim_immigration_airline, new_columns
+    )
 
-
-    dim_immi_airline.write.mode("overwrite").parquet(
-        path=output_data + "dim_immi_airline"
+    df_dim_immigration_airline.write.mode("overwrite").parquet(
+        path=f"{output_data}/dim_immigration_airline"
     )
 
 
-def process_label_descriptions(spark, input_data, output_data):
-    """Parsing label desctiption file to get codes of country, city, state
+def _read_SAS_i94(input_data: str):
+    label_file = os.path.join(input_data, "I94_SAS_Labels_Descriptions.SAS")
+    print(label_file)
+    with open(label_file) as f:
+        data = f.readlines()
+    return data
+
+
+def process_label_descriptions_country(spark, input_data, output_data):
+    """Prepare the auxiliar country_code table"
     Arguments:
         spark {object}: SparkSession object
         input_data {object}: Source S3 endpoint
@@ -149,10 +196,8 @@ def process_label_descriptions(spark, input_data, output_data):
         None
     """
 
-    logging.info("Start processing label descriptions")
-    label_file = os.path.join(input_data + "I94_SAS_Labels_Descriptions.SAS")
-    with open(label_file) as f:
-        contents = f.readlines()
+    logging.info("Start processing SAS label descriptions to country")
+    contents = _read_SAS_i94(input_data)
 
     country_code = {}
     for countries in contents[10:298]:
@@ -161,7 +206,21 @@ def process_label_descriptions(spark, input_data, output_data):
         country_code[code] = country
     spark.createDataFrame(country_code.items(), ["code", "country"]).write.mode(
         "overwrite"
-    ).parquet(path=output_data + "country_code")
+    ).parquet(path=f"{output_data}/country_code")
+
+
+def process_label_descriptions_city(spark, input_data, output_data):
+    """Prepare the auxiliar city_code table
+    Arguments:
+        spark {object}: SparkSession object
+        input_data {object}: Source S3 endpoint
+        output_data {object}: Target S3 endpoint
+    Returns:
+        None
+    """
+
+    logging.info("Start processing SAS label descriptions to city")
+    contents = _read_SAS_i94(input_data)
 
     city_code = {}
     for cities in contents[303:962]:
@@ -172,20 +231,11 @@ def process_label_descriptions(spark, input_data, output_data):
         city_code[code] = city
     spark.createDataFrame(city_code.items(), ["code", "city"]).write.mode(
         "overwrite"
-    ).parquet(path=output_data + "city_code")
-
-    state_code = {}
-    for states in contents[982:1036]:
-        pair = states.split("=")
-        code, state = pair[0].strip("\t").strip("'"), pair[1].strip().strip("'")
-        state_code[code] = state
-    spark.createDataFrame(state_code.items(), ["code", "state"]).write.mode(
-        "overwrite"
-    ).parquet(path=output_data + "state_code")
+    ).parquet(path=f"{output_data}/city_code")
 
 
-def process_temperature_data(spark, input_data, output_data):
-    """Process temperature data to get dim_temperature table
+def process_label_descriptions_state(spark, input_data, output_data):
+    """Prepare the auxiliar country_state city_code"
     Arguments:
         spark {object}: SparkSession object
         input_data {object}: Source S3 endpoint
@@ -194,56 +244,107 @@ def process_temperature_data(spark, input_data, output_data):
         None
     """
 
-    logging.info("Start processing dim_temperature")
+    logging.info("Start processing SAS label descriptions to state")
+    contents = _read_SAS_i94(input_data)
 
-    tempe_data = os.path.join(
-        input_data + "Globaltemperature/GlobalLandTemperaturesByCity.csv"
+    state_code = {}
+    for states in contents[982:1036]:
+        pair = states.split("=")
+        code, state = pair[0].strip("\t").strip("'"), pair[1].strip().strip("'")
+        state_code[code] = state
+    spark.createDataFrame(state_code.items(), ["code", "state"]).write.mode(
+        "overwrite"
+    ).parquet(path=f"{output_data}/state_code")
+
+
+def process_temperature_data(spark, input_data, output_data):
+    """Process temperature data to use like dimension table.
+    Arguments:
+        spark {object}: SparkSession object
+        input_data {object}: Source S3 endpoint
+        output_data {object}: Target S3 endpoint
+    Returns:
+        None
+    """
+
+    logging.info("Start processing temperature data")
+
+    temperature_file = os.path.join(
+        input_data, "Globaltemperature/GlobalLandTemperaturesByCity.csv"
     )
-    df = spark.read.csv(tempe_data, header=True)
+    df_temperature = spark.read.csv(temperature_file, header=True)
 
-    df = df.where(df["Country"] == "United States")
-    dim_temperature = df.select(
-        ["dt", "AverageTemperature", "AverageTemperatureUncertainty", "City", "Country"]
+    df_temperature = df_temperature.where(df_temperature["Country"] == "United States")
+    df_dim_temperature = df_temperature.select(
+        [
+            "dt",
+            "AverageTemperature",
+            "AverageTemperatureUncertainty",
+            "City",
+            "Country",
+            "Latitude",
+            "Longitude",
+        ]
     ).distinct()
 
-    new_columns = ["dt", "avg_temp", "avg_temp_uncertnty", "city", "country"]
-    dim_temperature = rename_columns(dim_temperature, new_columns)
+    new_columns = [
+        "date",
+        "avg_temp",
+        "avg_temp_uncertnty",
+        "city",
+        "country",
+        "latitude",
+        "longitude",
+    ]
+    df_dim_temperature = _transform_columns(df_dim_temperature, new_columns)
 
-    dim_temperature = dim_temperature.withColumn("dt", to_date(col("dt")))
-    dim_temperature = dim_temperature.withColumn("year", year(dim_temperature["dt"]))
-    dim_temperature = dim_temperature.withColumn("month", month(dim_temperature["dt"]))
+    df_dim_temperature = df_dim_temperature.withColumn("date", to_date(col("date")))
+    df_dim_temperature = df_dim_temperature.withColumn(
+        "year", year(df_dim_temperature["date"])
+    )
+    df_dim_temperature = df_dim_temperature.withColumn(
+        "month", month(df_dim_temperature["date"])
+    )
 
-    dim_temperature.write.mode("overwrite").parquet(
-        path=output_data + "dim_temperature"
+    df_dim_temperature.write.mode("overwrite").parquet(
+        path=f"{output_data}/dim_temperature"
     )
 
 
-def process_demography_data(spark, input_data, output_data):
-    """Process demograpy data to get dim_demog_population
-    and dim_demog_statistics table
-       Arguments:
-           spark {object}: SparkSession object
-           input_data {object}: Source S3 endpoint
-           output_data {object}: Target S3 endpoint
-       Returns:
-           None
+def process_demographic_data(spark, input_data, output_data):
+    """process that extracts information from the demographic dimension
+    Arguments:
+        spark {object}: SparkSession object
+        input_data {object}: Source S3 endpoint
+        output_data {object}: Target S3 endpoint
+    Returns:
+        None
     """
 
     logging.info("Start processing dim_demog_populaiton")
-    
-    demog_data = os.path.join(input_data + "us-cities-demographics.csv")
-    df = spark.read.format("csv").options(header=True, delimiter=";").load(demog_data)
 
-    dim_demog_population = (
+    df_demographics = os.path.join(input_data, "us-cities-demographics.csv")
+    df = (
+        spark.read.format("csv")
+        .options(header=True, delimiter=";")
+        .load(df_demographics)
+    )
+
+    df_dim_demographics = (
         df.select(
             [
                 "City",
                 "State",
+                "Median Age",
                 "Male Population",
                 "Female Population",
+                "Total Population",
                 "Number of Veterans",
                 "Foreign-born",
+                "Average Household Size",
+                "State Code",
                 "Race",
+                "Count",
             ]
         )
         .distinct()
@@ -253,32 +354,21 @@ def process_demography_data(spark, input_data, output_data):
     new_columns = [
         "city",
         "state",
+        "median_age",
         "male_population",
         "female_population",
-        "num_vetarans",
+        "total_population",
+        "number_veterans",
         "foreign_born",
+        "average_household_size",
+        "cod_state",
         "race",
+        "count",
     ]
-    dim_demog_population = rename_columns(dim_demog_population, new_columns)
+    df_dim_demographics = _transform_columns(df_dim_demographics, new_columns)
 
-    dim_demog_population.write.mode("overwrite").parquet(
-        path=output_data + "dim_demog_population"
-    )
-
-    logging.info("Start processing dim_demog_statistics")
-    dim_demog_statistics = (
-        df.select(["City", "State", "Median Age", "Average Household Size"])
-        .distinct()
-        .withColumn("demog_stat_id", monotonically_increasing_id())
-    )
-
-    new_columns = ["city", "state", "median_age", "avg_household_size"]
-    dim_demog_statistics = rename_columns(dim_demog_statistics, new_columns)
-    dim_demog_statistics = dim_demog_statistics.withColumn("city", upper(col("city")))
-    dim_demog_statistics = dim_demog_statistics.withColumn("state", upper(col("state")))
-
-    dim_demog_statistics.write.mode("overwrite").parquet(
-        path=output_data + "dim_demog_statistics"
+    df_dim_demographics.write.mode("overwrite").parquet(
+        path=f"{output_data}/dim_demographics"
     )
 
 
@@ -287,11 +377,14 @@ def main():
     input_data = SOURCE_S3_BUCKET
     output_data = DEST_S3_BUCKET
 
-    process_immigration_data(spark, input_data, output_data)
-    process_label_descriptions(spark, input_data, output_data)
+    process_immigration_data_fact(spark, input_data, output_data)
+    process_immigration_data_dim(spark, input_data, output_data)
+    process_label_descriptions_country(spark, input_data, output_data)
+    process_label_descriptions_city(spark, input_data, output_data)
+    process_label_descriptions_state(spark, input_data, output_data)
     process_temperature_data(spark, input_data, output_data)
-    process_demography_data(spark, input_data, output_data)
-    logging.info("Data processing completed")
+    process_demographic_data(spark, input_data, output_data)
+    logging.info("The data was processed correctly")
 
 
 if __name__ == "__main__":
