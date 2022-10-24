@@ -93,7 +93,7 @@ def process_immigration_data_fact(spark, input_data, output_data):
         "month",
         "city_code",
         "state_code",
-        "arrive_date",
+        "arrival_date",
         "departure_date",
         "mode",
         "visa",
@@ -102,7 +102,7 @@ def process_immigration_data_fact(spark, input_data, output_data):
     df_fact_immigration = _transform_columns(df_fact_immigration, new_columns)
 
     df_fact_immigration = df_fact_immigration.withColumn(
-        "arrive_date", udf(_sas_to_date, DateType())(col("arrive_date"))
+        "arrive_date", udf(_sas_to_date, DateType())(col("arrival_date"))
     )
     df_fact_immigration = df_fact_immigration.withColumn(
         "departure_date", udf(_sas_to_date, DateType())(col("departure_date"))
@@ -206,7 +206,7 @@ def process_label_descriptions_country(spark, input_data, output_data):
         country_code[code] = country
     spark.createDataFrame(country_code.items(), ["code", "country"]).write.mode(
         "overwrite"
-    ).parquet(path=f"{output_data}/country_code")
+    ).parquet(path=f"{output_data}/dim_country_code")
 
 
 def process_label_descriptions_city(spark, input_data, output_data):
@@ -231,7 +231,7 @@ def process_label_descriptions_city(spark, input_data, output_data):
         city_code[code] = city
     spark.createDataFrame(city_code.items(), ["code", "city"]).write.mode(
         "overwrite"
-    ).parquet(path=f"{output_data}/city_code")
+    ).parquet(path=f"{output_data}/dim_city_code")
 
 
 def process_label_descriptions_state(spark, input_data, output_data):
@@ -254,7 +254,7 @@ def process_label_descriptions_state(spark, input_data, output_data):
         state_code[code] = state
     spark.createDataFrame(state_code.items(), ["code", "state"]).write.mode(
         "overwrite"
-    ).parquet(path=f"{output_data}/state_code")
+    ).parquet(path=f"{output_data}/dim_state_code")
 
 
 def process_temperature_data(spark, input_data, output_data):
