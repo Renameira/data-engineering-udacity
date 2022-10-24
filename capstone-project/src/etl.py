@@ -321,7 +321,7 @@ def process_demographic_data(spark, input_data, output_data):
         None
     """
 
-    logging.info("Start processing dim_demog_populaiton")
+    logging.info("Start processing demographic dimension")
 
     df_demographics = os.path.join(input_data, "us-cities-demographics.csv")
     df = (
